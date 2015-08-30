@@ -1,24 +1,12 @@
 from pippi import dsp, tune
-from hcj import keys, fx, drums, snds
+
 import orc.hat
 import orc.kick
-
-#kick = dsp.read('snds/kick.wav').data
-guitar = snds.load('hcj/guitar1.wav')
-rhodes = snds.load('hcj/rhodes1.wav')
-rhodes = dsp.transpose(rhodes, 16.0/15.0)
-#snare = dsp.read('snds/snare.wav').data
-#snare = dsp.env(snare, 'phasor')
-snare = snds.load('mc303/snare1.wav')
-snare = dsp.amp(snare, 3)
-
-snarex = dsp.split(snare, 0, 1)
+import orc.snare
+import orc.suiteguitar
+import orc.rhodes
 
 key = 'g'
-
-def getRatio(degree, ratios=tune.terry, scale=tune.major):
-    ratio = ratios[scale[(degree - 1) % len(scale)]]
-    return ratio[0] / ratio[1]
 
 # tempo path
 def tempoPath(nsegs):
@@ -43,12 +31,6 @@ def tempoPath(nsegs):
         out += [ [ dsp.mstf(abs(s) * (maxms - minms) + minms) for s in seg ] ]
 
     return out
-
-def rhodesChord(length, chord, amp):
-    layers = [ keys.rhodes(length, freq, amp * dsp.rand(0.25, 0.5)) for freq in chord ]
-    layers = [ dsp.pan(layer, dsp.rand()) for layer in layers ]
-
-    return dsp.mix(layers)
 
 def parseBeat(pattern):
     out = []
@@ -79,49 +61,6 @@ def makeBeat(pattern, lengths, callback):
 
     return out
 
-gmelody = [1,3,4,6,9]
-
-def makeGuitar(length, i):
-    #g = dsp.transpose(guitar, getRatio(gmelody[i % len(gmelody)]))
-    #g = dsp.transpose(guitar, getRatio(scale[ i % len(scale)]))
-    r = dsp.transpose(guitar, getRatio(scale[ i % len(scale)]))
-    r = dsp.amp(r, dsp.rand(0.1, 0.5))
-
-    #g = dsp.mix([g,r])
-    g = dsp.fill(r, length, silence=True)
-
-
-    return g
-
-def makeSnare(length, i):
-    #burst = dsp.bln(length, dsp.rand(400, 800), dsp.rand(8000, 10000))
-    #burst = dsp.env(burst, 'phasor')
-    #s = dsp.mix([snare, burst])
-    s = snare
-    s = dsp.transpose(s, dsp.rand(0.9, 1.1))
-
-    s = dsp.fill(s, length, silence=True)
-
-    return dsp.taper(s, 40)
-
-def makeStab(length, i):
-    chord = tune.fromdegrees([ dsp.randchoose([1,4,5,8]) for _ in range(dsp.randint(2,4)) ], octave=3, root=key)
-    stab = rhodesChord(length, chord, dsp.rand(0.5, 0.75))
-    stab = dsp.taper(stab, 40)
-    stab = dsp.fill(stab, length, silence=True)
-
-    return stab
-
-def makePulse(length, i):
-    chord = tune.fromdegrees([ dsp.randchoose([1,4,5,8]) for _ in range(dsp.randint(2,4)) ], octave=2, root=key)
-    pulse = rhodesChord(length, chord, dsp.rand(0.5, 0.75)) 
-    pulse = dsp.taper(pulse, 40)
-    pulse = dsp.amp(pulse, dsp.rand(0.9, 1.5))
-    pulse = dsp.fill(pulse, length, silence=True)
-
-    return pulse
-
-
 def splitSeg(seg, size=2, vary=False):
     def split(s, size):
         hs = s / size
@@ -149,13 +88,6 @@ segs = tempoPath(50)
 for segi, seg in enumerate(segs): 
     print 'Rendering section %s' % (segi + 1)
 
-    scale = dsp.rotate([1,2,3,4,5,6,7,8,9,10], vary=True)
-    if dsp.rand() > 0.5:
-        scale.reverse()
-
-    for _ in range(4, 8):
-        scale.pop(dsp.randint(0, len(scale)-1))
-
 
     # kicks
     kickp =  'x...-.....x..x...'
@@ -166,7 +98,7 @@ for segi, seg in enumerate(segs):
     snarep = '..x...x...'
     pattern = parseBeat(snarep)
     subseg = splitSeg(seg, 2)
-    snares = makeBeat(pattern, subseg, makeSnare)
+    snares = makeBeat(pattern, subseg, orc.snare.make)
 
     # hats
     hatp =   'xxxx'
@@ -176,21 +108,22 @@ for segi, seg in enumerate(segs):
 
     # guitar 
     pattern = parseBeat('x  x')
-    guitars = makeBeat(pattern, seg, makeGuitar)
+    orc.suiteguitar.scale = orc.suiteguitar.makeScale()
+    guitars = makeBeat(pattern, seg, orc.suiteguitar.make)
 
     # stabs
     bar_length = dsp.randint(4, 13)
     num_pulses = dsp.randint(1, bar_length)
+    orc.rhodes.key = key
     pattern = dsp.eu(bar_length, num_pulses)
     pattern = dsp.rotate(pattern, vary=True)
     subseg = splitSeg(seg, 3)
-
-    stabs = makeBeat(pattern, subseg, makeStab)
+    stabs = makeBeat(pattern, subseg, orc.rhodes.makeStab)
     
     # pulses
     pulsep = 'x..'
     pattern = parseBeat(pulsep)
-    pulses = makeBeat(pattern, seg, makePulse)
+    pulses = makeBeat(pattern, seg, orc.rhodes.makePulse)
 
     instLayers = [ kicks, snares, stabs, hats, pulses ]
 
@@ -201,9 +134,8 @@ for segi, seg in enumerate(segs):
     section = dsp.mix(instLayers)
 
     chord = [ dsp.randint(1, 9) for _ in range(dsp.randint(2,4)) ]
-    long_chord = rhodesChord(sum(seg), tune.fromdegrees(chord, octave=dsp.randint(2,4), root=key), dsp.rand(0.6, 0.75))
+    long_chord = orc.rhodes.chord(sum(seg), tune.fromdegrees(chord, octave=dsp.randint(2,4), root=key), dsp.rand(0.6, 0.75))
     long_chord = dsp.fill(long_chord, sum(seg))
-    long_chord = dsp.mix([ long_chord, dsp.fill(guitar, sum(seg), silence=True) ])
 
     def makeGlitch(length, i):
         g = dsp.cut(long_chord, dsp.randint(0, dsp.flen(long_chord) - length), length)

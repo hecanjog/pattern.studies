@@ -8,4 +8,3 @@ bigkick = snds.load('mc303/kick2.wav')
 def make(length, i):
     return dsp.taper(dsp.fill(dsp.mix([ bigkick, kick ]), length, silence=True), 40)
 
-
