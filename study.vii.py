@@ -1,14 +1,12 @@
 from pippi import dsp, tune
 from hcj import keys, fx, drums, snds
+import orc.hat
+import orc.kick
 
 #kick = dsp.read('snds/kick.wav').data
-kick = snds.load('mc303/kick1.wav')
-hat = snds.load('mc303/hat2.wav')
-bigkick = snds.load('mc303/kick2.wav')
 guitar = snds.load('hcj/guitar1.wav')
 rhodes = snds.load('hcj/rhodes1.wav')
 rhodes = dsp.transpose(rhodes, 16.0/15.0)
-#bigkick = dsp.read('snds/kick606.wav').data
 #snare = dsp.read('snds/snare.wav').data
 #snare = dsp.env(snare, 'phasor')
 snare = snds.load('mc303/snare1.wav')
@@ -16,7 +14,7 @@ snare = dsp.amp(snare, 3)
 
 snarex = dsp.split(snare, 0, 1)
 
-key = 'c#'
+key = 'g'
 
 def getRatio(degree, ratios=tune.terry, scale=tune.major):
     ratio = ratios[scale[(degree - 1) % len(scale)]]
@@ -95,18 +93,6 @@ def makeGuitar(length, i):
 
     return g
 
-def makeHat(length, i):
-    #h = dsp.bln(length / 4, dsp.rand(6000, 8000), dsp.rand(9000, 16000))
-    #h = dsp.amp(h, dsp.rand(0.5, 1))
-    #h = dsp.env(h, 'phasor')
-    h = hat
-    h = dsp.fill(h, length, silence=True)
-
-    return h
-
-def makeKick(length, i):
-    return dsp.taper(dsp.fill(dsp.mix([ bigkick, kick ]), length, silence=True), 40)
-
 def makeSnare(length, i):
     #burst = dsp.bln(length, dsp.rand(400, 800), dsp.rand(8000, 10000))
     #burst = dsp.env(burst, 'phasor')
@@ -129,7 +115,6 @@ def makeStab(length, i):
 def makePulse(length, i):
     chord = tune.fromdegrees([ dsp.randchoose([1,4,5,8]) for _ in range(dsp.randint(2,4)) ], octave=2, root=key)
     pulse = rhodesChord(length, chord, dsp.rand(0.5, 0.75)) 
-    #pulse = dsp.mix([ pulse, kick ])
     pulse = dsp.taper(pulse, 40)
     pulse = dsp.amp(pulse, dsp.rand(0.9, 1.5))
     pulse = dsp.fill(pulse, length, silence=True)
@@ -175,7 +160,7 @@ for segi, seg in enumerate(segs):
     # kicks
     kickp =  'x...-.....x..x...'
     pattern = parseBeat(kickp)
-    kicks = makeBeat(pattern, seg, makeKick)
+    kicks = makeBeat(pattern, seg, orc.kick.make)
 
     # snares
     snarep = '..x...x...'
@@ -187,7 +172,7 @@ for segi, seg in enumerate(segs):
     hatp =   'xxxx'
     pattern = parseBeat(hatp)
     subseg = splitSeg(seg, 4)
-    hats = makeBeat(pattern, subseg, makeHat)
+    hats = makeBeat(pattern, subseg, orc.hat.make)
 
     # guitar 
     pattern = parseBeat('x  x')
@@ -207,7 +192,7 @@ for segi, seg in enumerate(segs):
     pattern = parseBeat(pulsep)
     pulses = makeBeat(pattern, seg, makePulse)
 
-    instLayers = [ kicks, snares, stabs, hats, pulses, guitars ]
+    instLayers = [ kicks, snares, stabs, hats, pulses ]
 
     if segi <= 40:
         for _ in range(0, 4):
