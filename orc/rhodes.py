@@ -29,4 +29,18 @@ def makePulse(length, i):
 
     return pulse
 
+def makeLongChord(seg):
+    c = [ dsp.randint(1, 9) for _ in range(dsp.randint(2,4)) ]
+    long_chord = chord(sum(seg), tune.fromdegrees(c, octave=dsp.randint(2,4), root=key), dsp.rand(0.6, 0.75))
+    long_chord = dsp.fill(long_chord, sum(seg))
+
+    return long_chord
+
+def makeGlitch(length, i):
+    g = dsp.cut(long_chord, dsp.randint(0, dsp.flen(long_chord) - length), length)
+    g = dsp.alias(g)
+    g = dsp.fill(g, length)
+
+    return g
+
 

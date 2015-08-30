@@ -60,19 +60,11 @@ for segi, seg in enumerate(segs):
 
     section = dsp.mix(instLayers)
 
-    chord = [ dsp.randint(1, 9) for _ in range(dsp.randint(2,4)) ]
-    long_chord = orc.rhodes.chord(sum(seg), tune.fromdegrees(chord, octave=dsp.randint(2,4), root=key), dsp.rand(0.6, 0.75))
-    long_chord = dsp.fill(long_chord, sum(seg))
-
-    def makeGlitch(length, i):
-        g = dsp.cut(long_chord, dsp.randint(0, dsp.flen(long_chord) - length), length)
-        g = dsp.alias(g)
-        g = dsp.fill(g, length)
-
-        return g
+    long_chord = orc.rhodes.makeLongChord(seg)
 
     subseg = ctl.splitSeg(seg, 2)
-    glitches = ctl.makeBeat([1,1], subseg, makeGlitch)
+    orc.rhodes.long_chord = long_chord
+    glitches = ctl.makeBeat([1,1], subseg, orc.rhodes.makeGlitch)
 
     changeindex = changeindex + 1
 
