@@ -1,4 +1,4 @@
-from pippi import dsp, tune
+from pippi import dsp
 
 import orc.hat
 import orc.kick
@@ -11,7 +11,6 @@ import ctl
 key = 'g'
 
 out = ''
-changeindex = 0
 nsegs = 50
 
 segs = ctl.tempoPath(nsegs)
@@ -19,11 +18,11 @@ segs = ctl.tempoPath(nsegs)
 kickprob = [ dsp.rand() for _ in range(nsegs) ]
 snareprob = [ dsp.rand() for _ in range(nsegs) ]
 hatprob = [ dsp.rand() for _ in range(nsegs) ]
-guitarprob = [ 0 for _ in range(nsegs) ]
+suiteguitarprob = [ 0 for _ in range(nsegs) ]
 stabprob = [ dsp.rand() for _ in range(nsegs) ]
 pulseprob = [ dsp.rand() for _ in range(nsegs) ]
 longchordprob = [ dsp.rand() for _ in range(nsegs) ]
-longguitarprob = [ 1 for _ in range(nsegs) ]
+guitarprob = [ 1 for _ in range(nsegs) ]
 glitchprob = [ dsp.rand() for _ in range(nsegs) ]
 
 for segi, seg in enumerate(segs): 
@@ -54,7 +53,7 @@ for segi, seg in enumerate(segs):
 
         layers += [ hats ]
 
-    if dsp.rand() < guitarprob[segi]:
+    if dsp.rand() < suiteguitarprob[segi]:
         pattern = ctl.parseBeat('x  x')
         orc.suiteguitar.scale = orc.suiteguitar.makeScale()
         guitars = ctl.makeBeat(pattern, seg, orc.suiteguitar.make)
@@ -85,7 +84,7 @@ for segi, seg in enumerate(segs):
     if dsp.rand() < longchordprob[segi]:
         layers += [ long_chord ]
 
-    if dsp.rand() < longguitarprob[segi]:
+    if dsp.rand() < guitarprob[segi]:
         long_guitar = orc.guitar.makeLong(seg)
         layers += [ long_guitar ]
 
@@ -95,8 +94,6 @@ for segi, seg in enumerate(segs):
         glitches = ctl.makeBeat([1,1], subseg, orc.rhodes.makeGlitch)
 
         layers += [ glitches ]
-
-    changeindex = changeindex + 1
 
     if len(layers) > 0:
         section = dsp.mix(layers)
