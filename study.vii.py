@@ -5,6 +5,7 @@ import orc.kick
 import orc.snare
 import orc.suiteguitar
 import orc.rhodes
+import orc.guitar
 import ctl
 
 key = 'g'
@@ -61,6 +62,7 @@ for segi, seg in enumerate(segs):
     section = dsp.mix(instLayers)
 
     long_chord = orc.rhodes.makeLongChord(seg)
+    long_guitar = orc.guitar.makeLong(seg)
 
     subseg = ctl.splitSeg(seg, 2)
     orc.rhodes.long_chord = long_chord
@@ -68,7 +70,7 @@ for segi, seg in enumerate(segs):
 
     changeindex = changeindex + 1
 
-    section = dsp.mix([ section, long_chord, glitches ])
+    section = dsp.mix([ section, long_chord, long_guitar, glitches ])
 
     out += section
 
