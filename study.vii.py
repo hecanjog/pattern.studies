@@ -23,7 +23,7 @@ guitarprob = [ 0 for _ in range(nsegs) ]
 stabprob = [ dsp.rand() for _ in range(nsegs) ]
 pulseprob = [ dsp.rand() for _ in range(nsegs) ]
 longchordprob = [ dsp.rand() for _ in range(nsegs) ]
-longguitarprob = [ dsp.rand() for _ in range(nsegs) ]
+longguitarprob = [ 1 for _ in range(nsegs) ]
 glitchprob = [ dsp.rand() for _ in range(nsegs) ]
 
 for segi, seg in enumerate(segs): 
