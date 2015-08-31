@@ -15,15 +15,15 @@ nsegs = 50
 
 segs = ctl.tempoPath(nsegs)
 
-kickprob = [ dsp.rand() for _ in range(nsegs) ]
-snareprob = [ dsp.rand() for _ in range(nsegs) ]
-hatprob = [ dsp.rand() for _ in range(nsegs) ]
+kickprob = [ 0 for _ in range(20) ] + dsp.breakpoint([ dsp.rand() for _ in range(8) ], nsegs - 30) + [ 0 for _ in range(10) ]
+snareprob = [ 0 for _ in range(20) ] + dsp.breakpoint([ dsp.rand() for _ in range(8) ], nsegs - 30) + [ 0 for _ in range(10) ]
+hatprob = [ 0 for _ in range(10) ] + dsp.breakpoint([ dsp.rand() for _ in range(8) ], nsegs - 20) + [ 0 for _ in range(10) ]
 suiteguitarprob = [ 0 for _ in range(nsegs) ]
-stabprob = [ dsp.rand() for _ in range(nsegs) ]
-pulseprob = [ dsp.rand() for _ in range(nsegs) ]
-longchordprob = [ dsp.rand() for _ in range(nsegs) ]
+stabprob = [ 0 for _ in range(3) ] + dsp.breakpoint([ dsp.rand() for _ in range(8) ], nsegs - 6) + [ 0 for _ in range(3) ]
+pulseprob = [ 0 for _ in range(3) ] + dsp.breakpoint([ dsp.rand() for _ in range(8) ], nsegs - 6) + [ 0 for _ in range(3) ]
+longchordprob = [ 1 for _ in range(3) ] + dsp.breakpoint([ dsp.rand() for _ in range(8) ], nsegs - 6) + [ 1 for _ in range(3) ]
 guitarprob = [ 1 for _ in range(nsegs) ]
-glitchprob = [ dsp.rand() for _ in range(nsegs) ]
+glitchprob = [ 1 for _ in range(3) ] + dsp.breakpoint([ dsp.rand() for _ in range(8) ], nsegs - 6) + [ 1 for _ in range(3) ]
 
 for segi, seg in enumerate(segs): 
     print 'Rendering section %s' % (segi + 1)
@@ -98,5 +98,9 @@ for segi, seg in enumerate(segs):
     if len(layers) > 0:
         section = dsp.mix(layers)
         out += section
+
+out += dsp.env(dsp.mix([ orc.guitar.makeLong(dsp.randchoose(segs)) for _ in range(2) ]), 'phasor')
+out += dsp.env(dsp.mix([ orc.guitar.makeLong(dsp.randchoose(segs)) for _ in range(2) ]), 'phasor')
+out += dsp.env(dsp.mix([ orc.guitar.makeLong(dsp.randchoose(segs)) for _ in range(3) ]), 'phasor')
 
 dsp.write(out, 'study.vii')
