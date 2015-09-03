@@ -2,6 +2,7 @@ from pippi import dsp, tune
 from hcj import snds
 
 guitar = snds.load('hcj/guitar1.wav')
+guitar = dsp.transpose(guitar, 0.711) # transpose from Db to G
 
 def makeScale():
     scale = dsp.rotate([1,2,3,4,5,6,7,8,9,10], vary=True)
@@ -18,14 +19,20 @@ def getRatio(degree, ratios=tune.terry, scale=tune.major):
     return ratio[0] / ratio[1]
 
 def make(length, i):
-    #g = dsp.transpose(guitar, getRatio(gmelody[i % len(gmelody)]))
-    #g = dsp.transpose(guitar, getRatio(scale[ i % len(scale)]))
     r = dsp.transpose(guitar, getRatio(scale[ i % len(scale)]))
-    r = dsp.amp(r, dsp.rand(0.1, 0.5))
+    r = dsp.mix([ dsp.pan(r, dsp.rand()), dsp.drift(dsp.pan(r, dsp.rand()), dsp.rand(0.001, 0.02)) ])
 
-    #g = dsp.mix([g,r])
+    if dsp.rand() > 0.5:
+        r = dsp.alias(r)
+
+    if dsp.rand() > 0.5:
+        r = dsp.split(r, dsp.flen(r) / dsp.randint(2,5))
+        r = dsp.randshuffle(r)
+        r = ''.join(r)
+
+    r = dsp.amp(r, dsp.rand(0.1, 0.75))
+
     g = dsp.fill(r, length, silence=True)
-
 
     return g
 

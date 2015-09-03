@@ -11,14 +11,14 @@ import ctl
 key = 'g'
 
 out = ''
-nsegs = 50
+nsegs = 60
 
 segs = ctl.tempoPath(nsegs)
 
 kickprob = [ 0 for _ in range(20) ] + dsp.breakpoint([ dsp.rand() for _ in range(8) ], nsegs - 30) + [ 0 for _ in range(10) ]
 snareprob = [ 0 for _ in range(20) ] + dsp.breakpoint([ dsp.rand() for _ in range(8) ], nsegs - 30) + [ 0 for _ in range(10) ]
 hatprob = [ 0 for _ in range(10) ] + dsp.breakpoint([ dsp.rand() for _ in range(8) ], nsegs - 20) + [ 0 for _ in range(10) ]
-suiteguitarprob = [ 0 for _ in range(nsegs) ]
+suiteguitarprob = dsp.breakpoint([ dsp.rand() for _ in range(8) ], 15) + [ 0 for _ in range(nsegs - 30) ] + dsp.breakpoint([ dsp.rand() for _ in range(8) ], 15)
 stabprob = [ 0 for _ in range(3) ] + dsp.breakpoint([ dsp.rand() for _ in range(8) ], nsegs - 6) + [ 0 for _ in range(3) ]
 pulseprob = [ 0 for _ in range(3) ] + dsp.breakpoint([ dsp.rand() for _ in range(8) ], nsegs - 6) + [ 0 for _ in range(3) ]
 longchordprob = [ 1 for _ in range(3) ] + dsp.breakpoint([ dsp.rand() for _ in range(8) ], nsegs - 6) + [ 1 for _ in range(3) ]
@@ -99,8 +99,8 @@ for segi, seg in enumerate(segs):
         section = dsp.mix(layers)
         out += section
 
-out += dsp.env(dsp.mix([ orc.guitar.makeLong(dsp.randchoose(segs)) for _ in range(2) ]), 'phasor')
-out += dsp.env(dsp.mix([ orc.guitar.makeLong(dsp.randchoose(segs)) for _ in range(2) ]), 'phasor')
-out += dsp.env(dsp.mix([ orc.guitar.makeLong(dsp.randchoose(segs)) for _ in range(3) ]), 'phasor')
+out += dsp.env(dsp.mix([ orc.guitar.makeLong([dsp.stf(dsp.rand(4, 8))]) for _ in range(2) ]), 'phasor')
+out += dsp.env(dsp.mix([ orc.guitar.makeLong([dsp.stf(dsp.rand(4, 10))]) for _ in range(2) ]), 'phasor')
+out += dsp.env(dsp.mix([ orc.guitar.makeLong([dsp.stf(dsp.rand(6, 12))]) for _ in range(3) ]), 'phasor')
 
 dsp.write(out, 'study.vii')
