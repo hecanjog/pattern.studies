@@ -1,4 +1,5 @@
-from pippi import dsp
+from pippi import dsp, tune
+from hcj import fx
 
 guitars = [ dsp.read('samples/guitar%s.wav' % (i + 1)).data for i in range(5) ]
 
@@ -45,5 +46,23 @@ for _ in range(nlayers):
 
 # mix down frag layers
 out = dsp.mix(layers)
+
+# Add sine buildup
+
+sines = []
+
+lowfreq = tune.ntf('g', octave=2)
+
+sines += [ dsp.tone((dsp.flen(out) / 4) * 3, lowfreq, 0.5) ]
+sines += [ dsp.tone((dsp.flen(out) / 4) * 3, lowfreq * 1.067, 0.5) ]
+sines += [ dsp.tone((dsp.flen(out) / 4) * 3, lowfreq * 1.667, 0.25) ]
+
+sines = [ dsp.mix([ fx.penv(s), s ]) for s in sines ]
+
+sines = dsp.mix(sines)
+sines = dsp.env(sines, 'line')
+sines = dsp.pad(sines, dsp.flen(out) - dsp.flen(sines), 0)
+
+out = dsp.mix([ out, sines ])
 
 dsp.write(out, 'study.viii')

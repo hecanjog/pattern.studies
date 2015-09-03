@@ -11,6 +11,7 @@ def makeLong(seg):
     fade_guitar = dsp.randchoose(guitars)
     fade_guitar = dsp.amp(fade_guitar, dsp.rand(0.1, 0.3))
     fade_guitar = fx.penv(fade_guitar)
+    fade_guitar = dsp.fill(fade_guitar, sum(seg))
 
     out = dsp.mix([ long_guitar, fade_guitar ])
 
