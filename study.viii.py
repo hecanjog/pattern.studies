@@ -1,11 +1,49 @@
 from pippi import dsp
 
-import orc.rhodes
-import orc.guitar
-import ctl
+guitars = [ dsp.read('samples/guitar%s.wav' % (i + 1)).data for i in range(5) ]
 
-key = 'g'
+layers = []
+nlayers = 3
+length = dsp.stf(120)
 
-out = ''
+for _ in range(nlayers):
+    frags = []
+    elapsed = 0
+
+    while elapsed < length:
+        # pick a fragment
+        g = dsp.randchoose(guitars)
+
+        # transpose to A
+        g = dsp.transpose(g, 1.125)
+
+        # rand octave or 5th transpose
+        g = dsp.transpose(g, dsp.randchoose([1, 1.5, 2]))
+
+        # slice fragment btwn 60ms and 1/2 frag length
+        fraglen = dsp.mstf(dsp.rand(60, dsp.flen(g) / 2))
+        pos = dsp.randint(0, dsp.flen(g) - fraglen)
+        g = dsp.cut(g, pos, fraglen)
+
+        # attenuate
+        g = dsp.amp(g, dsp.rand(0.1, 0.5))
+
+        # randomly pan
+        g = dsp.pan(g, dsp.rand())
+
+        # add frag length to elapsed time
+        elapsed += dsp.flen(g)
+
+        # add fragment to frag list
+        frags += [ g ]
+
+    # concat all frags
+    layer = ''.join(frags)
+
+    # add frags to layers
+    layers += [ layer ]
+
+# mix down frag layers
+out = dsp.mix(layers)
 
 dsp.write(out, 'study.viii')
