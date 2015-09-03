@@ -103,4 +103,4 @@ out += dsp.env(dsp.mix([ orc.guitar.makeLong(dsp.randchoose(segs)) for _ in rang
 out += dsp.env(dsp.mix([ orc.guitar.makeLong(dsp.randchoose(segs)) for _ in range(2) ]), 'phasor')
 out += dsp.env(dsp.mix([ orc.guitar.makeLong(dsp.randchoose(segs)) for _ in range(3) ]), 'phasor')
 
-dsp.write(out, 'study.vii')
+dsp.write(out, 'study.vii-ff2')

@@ -31,7 +31,7 @@ def makePulse(length, i):
 
 def makeLongChord(seg):
     degrees = [ dsp.randint(1, 9) for _ in range(dsp.randint(2,4)) ]
-    long_chord = chord(sum(seg), tune.fromdegrees(degrees, octave=dsp.randint(1,3), root=key), dsp.rand(0.6, 0.75))
+    long_chord = chord(sum(seg), [ freq * 2**dsp.randint(0, 3) for freq in tune.fromdegrees(degrees, octave=1, root=key) ], dsp.rand(0.6, 0.75))
     long_chord = dsp.fill(long_chord, sum(seg))
 
     return long_chord

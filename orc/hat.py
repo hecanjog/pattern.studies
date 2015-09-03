@@ -1,5 +1,5 @@
 from pippi import dsp
-from hcj import snds
+from hcj import snds, fx
 
 hat = snds.load('mc303/hat2.wav')
 
@@ -9,6 +9,8 @@ def make(length, i):
     #h = dsp.env(h, 'phasor')
     h = hat
     h = dsp.fill(h, length, silence=True)
+    if dsp.rand() > 0.5:
+        h = fx.penv(h)
 
     return h
 
