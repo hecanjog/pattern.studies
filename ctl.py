@@ -34,7 +34,7 @@ def parseBeat(pattern):
 
     return out
 
-def makeBeat(pattern, lengths, callback):
+def makeBeat(pattern, lengths, callback, args=None):
     out = ''
 
     for i, length in enumerate(lengths):
@@ -42,7 +42,10 @@ def makeBeat(pattern, lengths, callback):
         amp = pattern[i % len(pattern)]
 
         if amp > 0:
-            out += callback(length, i)
+            if args is not None:
+                out += callback(length, i, args)
+            else:
+                out += callback(length, i)
         else:
             out += dsp.pad('', 0, length)
 
