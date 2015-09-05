@@ -20,7 +20,7 @@ def makeSwells(cname, numswells, length, key='e', octave=1):
     swells = []
 
     for _ in range(numswells):
-        slength = dsp.randint((length / numswells) * 0.75, length / numswells)
+        slength = dsp.randint((length / numswells) * 0.85, length / numswells)
         swell = keys.pulsars(cname, slength, drift=dsp.rand(0.001, 0.01), speed=dsp.rand(0.1, 0.5), amp=dsp.rand(0.2, 0.5), key=key, octave=octave)
         swell = dsp.env(swell, 'hann')
         swell = dsp.taper(swell, 30)
@@ -73,9 +73,10 @@ while elapsed < tlength:
     if count % 4 == 0:
         bar = dsp.mix([ bar, dsp.pad(flam, dsp.flen(bar) - dsp.flen(flam), 0) ])
 
-    progression = 'i v vi'.split(' ')
+    # Look ma, harmonic motion!
+    progression = 'i i v IV IV6'.split(' ')
     cname = progression[ count % len(progression) ]
-    swells = dsp.mix([ makeSwells(cname, nswell, dsp.flen(bar)) for nswell in [4,5] ])
+    swells = dsp.mix([ makeSwells(cname, nswell, dsp.flen(bar)) for nswell in [8,4] ])
 
     bar = dsp.mix([ bar, sm, sk, snares, kicks, swells ])
 
