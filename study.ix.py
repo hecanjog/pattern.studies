@@ -1,5 +1,5 @@
 from pippi import dsp, tune
-from hcj import fx
+from hcj import fx, keys
 import ctl
 
 tlength = dsp.stf(60 * 3)
@@ -16,6 +16,21 @@ flam = dsp.read('samples/jess/snareflam.wav').data
 smash = dsp.read('samples/jess/smash.wav').data
 skitter = dsp.read('samples/jess/skitter.wav').data
 
+def makeSwells(cname, numswells, length, key='e', octave=1):
+    swells = []
+
+    for _ in range(numswells):
+        slength = dsp.randint((length / numswells) * 0.75, length / numswells)
+        swell = keys.pulsars(cname, slength, drift=dsp.rand(0.001, 0.01), speed=dsp.rand(0.1, 0.5), amp=dsp.rand(0.2, 0.5), key=key, octave=octave)
+        swell = dsp.env(swell, 'hann')
+        swell = dsp.taper(swell, 30)
+
+        swells += [ swell ]
+
+    swells = [ dsp.fill(swell, length / numswells, silence=True) for swell in swells ]
+
+    return ''.join(swells)
+
 def makeSnare(length, i):
     return dsp.fill(snare, length, silence=True)
 
@@ -24,6 +39,8 @@ def makeKick(length, i):
     return dsp.fill(k, length, silence=True)
 
 while elapsed < tlength:
+    print 'Rendering section %s...' % count
+
     bar = ''
 
     bar += dsp.mix([ dloop, kickhard ])
@@ -52,10 +69,15 @@ while elapsed < tlength:
     sm = dsp.amp(sm, dsp.rand(0.5, 1))
     sk = dsp.fill(skitter, dsp.flen(bar))
     sk = fx.penv(sk)
-    bar = dsp.mix([ bar, sm, sk, snares, kicks ])
 
     if count % 4 == 0:
         bar = dsp.mix([ bar, dsp.pad(flam, dsp.flen(bar) - dsp.flen(flam), 0) ])
+
+    progression = 'i v vi'.split(' ')
+    cname = progression[ count % len(progression) ]
+    swells = dsp.mix([ makeSwells(cname, nswell, dsp.flen(bar)) for nswell in [4,5] ])
+
+    bar = dsp.mix([ bar, sm, sk, snares, kicks, swells ])
 
     out += bar
 
