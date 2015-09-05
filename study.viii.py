@@ -65,4 +65,4 @@ sines = dsp.pad(sines, dsp.flen(out) - dsp.flen(sines), 0)
 
 out = dsp.mix([ out, sines ])
 
-dsp.write(out, 'study.viii')
+dsp.write(out, '01-study.viii')
