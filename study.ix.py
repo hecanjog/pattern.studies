@@ -11,8 +11,12 @@ count = 0
 dloop = dsp.read('samples/jess/loop2.wav').data
 kicksoft = dsp.read('samples/jess/kickshuffle.wav').data
 kickhard = dsp.read('samples/jess/kickcym.wav').data
+rimshot = dsp.read('samples/jess/rimshot.wav').data
+rimshot = dsp.amp(rimshot, 4)
 snare = dsp.read('samples/jess/snare.wav').data
+snare = dsp.amp(snare, 3)
 flam = dsp.read('samples/jess/snareflam.wav').data
+flam = dsp.amp(flam, 3)
 smash = dsp.read('samples/jess/smash.wav').data
 skitter = dsp.read('samples/jess/skitter.wav').data
 
@@ -41,8 +45,23 @@ def makeSwells(cname, numswells, length, key='e', octave=1):
 
     return ''.join(swells)
 
+def makeRhodes(length, beat, freqs):
+    chord = [ keys.rhodes(length, freq, dsp.rand(0.4, 0.6)) for freq in freqs ]
+    chord = dsp.randshuffle(chord)
+    pause = 0
+    for i, c in enumerate(chord):
+        pause = pause + (dsp.randint(1, 4) * beat)
+        c = dsp.pan(c, dsp.rand())
+        chord[i] = dsp.pad(dsp.fill(c, length - pause), pause, 0)
+
+    return dsp.mix(chord)
+
 def makeSnare(length, i):
     return dsp.fill(snare, length, silence=True)
+
+def makeRimshot(length, i):
+    r = dsp.transpose(rimshot, dsp.rand(0.9, 1.1))
+    return dsp.fill(r, length, silence=True)
 
 def makeKick(length, i):
     k = dsp.randchoose([ kickhard, kicksoft ])
@@ -58,7 +77,7 @@ def makeBloop(length, i, bfreqs):
 
     wf = dsp.breakpoint([0] + [ dsp.rand(-1,1) for _ in range(dsp.randint(8, 20)) ] + [0], 512)
 
-    bloop = dsp.mix([ keys.pulsar(bf, blength, wf=wf, amp=dsp.rand(0.1, 0.25)) for bf in [ bfreq, bfreq / 2, bfreq * 2 ] ])
+    bloop = dsp.mix([ keys.pulsar(bf, blength, wf=wf, amp=dsp.rand(0.1, 0.5)) for bf in [ bfreq, bfreq / 2, bfreq * 2 ] ])
     bloop = dsp.env(bloop, 'phasor')
 
     bloop = dsp.fill(bloop, length, silence=True)
@@ -92,6 +111,12 @@ while elapsed < tlength:
     snares = ctl.makeBeat(pattern, [ beat for _ in range(16) ], makeSnare)
     layers += [ snares ]
 
+    rimshotp = '....x...'
+    pattern = ctl.parseBeat(rimshotp)
+    rimshots = ctl.makeBeat(pattern, [ beat for _ in range(16) ], makeRimshot)
+    layers += [ rimshots ]
+
+
     kickp = 'x.......'
     pattern = ctl.parseBeat(kickp)
     kicks = ctl.makeBeat(pattern, [ beat for _ in range(16) ], makeKick)
@@ -103,8 +128,7 @@ while elapsed < tlength:
     sk = dsp.fill(skitter, dsp.flen(bar))
     sk = fx.penv(sk)
 
-    if count > 8:
-        layers += [ sm, sk ]
+    layers += [ sm, sk ]
 
     if count % 4 == 0:
         layers += [ dsp.pad(flam, dsp.flen(bar) - dsp.flen(flam), 0) ]
@@ -123,9 +147,11 @@ while elapsed < tlength:
     bloopp = bloopp if dsp.rand() > 0.65 else 'xxx.----'
     pattern = ctl.parseBeat(bloopp)
     bloops = ctl.makeBeat(pattern, [ beat for _ in range(16) ], makeBloop, bfreqs)
-    
-    if count > 4:
-        layers += [ bloops ]
+    layers += [ bloops ]
+
+    rfreqs = tune.chord(cname, key, 2)
+    rhodeses = makeRhodes(dsp.flen(bar), beat, rfreqs)
+    layers += [ rhodeses ]
 
     bar = dsp.mix(layers)
 
