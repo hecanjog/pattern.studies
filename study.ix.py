@@ -8,7 +8,10 @@ out = ''
 elapsed = 0
 count = 0
 
-dloop = dsp.read('samples/jess/loop2.wav').data
+dloop1 = dsp.read('samples/jess/loop1.wav').data
+dloop1 = dsp.fill(dloop1, dsp.flen(dloop1) / 4)
+dloop2 = dsp.read('samples/jess/loop2.wav').data
+
 kicksoft = dsp.read('samples/jess/kickshuffle.wav').data
 kickhard = dsp.read('samples/jess/kickcym.wav').data
 rimshot = dsp.read('samples/jess/rimshot.wav').data
@@ -91,9 +94,9 @@ while elapsed < tlength:
 
     bar = ''
 
-    bar += dsp.mix([ dloop, kickhard ])
-    bar += dsp.mix([ dloop, kicksoft ])
-    bar += dsp.mix([ dloop, kicksoft ])
+    bar += dsp.mix([ dsp.randchoose([ dloop1, dloop2 ]), kickhard ])
+    bar += dsp.mix([ dsp.randchoose([ dloop1, dloop2 ]), kicksoft ])
+    bar += dsp.mix([ dsp.randchoose([ dloop1, dloop2 ]), kicksoft ])
 
     beat = dsp.flen(bar) / 16
     bar = dsp.split(bar, beat)
