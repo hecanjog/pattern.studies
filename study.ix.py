@@ -6,11 +6,12 @@ tlength = dsp.stf(60 * 3)
 
 out = ''
 elapsed = 0
-count = 0
+count = 1 
+
+dloop2 = dsp.read('samples/jess/loop2.wav').data
 
 dloop1 = dsp.read('samples/jess/loop1.wav').data
-dloop1 = dsp.fill(dloop1, dsp.flen(dloop1) / 4)
-dloop2 = dsp.read('samples/jess/loop2.wav').data
+dloop1 = dsp.fill(dloop1, dsp.flen(dloop2))
 
 kicksoft = dsp.read('samples/jess/kickshuffle.wav').data
 kickhard = dsp.read('samples/jess/kickcym.wav').data
