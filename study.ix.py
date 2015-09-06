@@ -103,8 +103,12 @@ while elapsed < tlength:
     bar = dsp.split(bar, beat)
     bar = dsp.randshuffle(bar)
     for i, b in enumerate(bar):
-        if dsp.rand() > 0.5:
+        if dsp.rand() > 0.75:
             bar[i] = dsp.pad('', 0, dsp.flen(b))
+        elif dsp.rand() > 0.75:
+            bar[i] = dsp.split(b, dsp.flen(b) / 2)[0] * 2
+
+        bar[i] = dsp.amp(bar[i], dsp.rand(0.9, 2))
 
     bar = ''.join(bar)
 
