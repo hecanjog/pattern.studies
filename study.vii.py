@@ -6,6 +6,7 @@ import orc.snare
 import orc.suiteguitar
 import orc.rhodes
 import orc.guitar
+import orc.wes
 import ctl
 
 key = 'g'
@@ -24,6 +25,7 @@ pulseprob = [ 0 for _ in range(3) ] + dsp.breakpoint([ dsp.rand() for _ in range
 longchordprob = [ 1 for _ in range(3) ] + dsp.breakpoint([ dsp.rand() for _ in range(8) ], nsegs - 6) + [ 1 for _ in range(3) ]
 guitarprob = [ 1 for _ in range(nsegs) ]
 glitchprob = [ 1 for _ in range(3) ] + dsp.breakpoint([ dsp.rand() for _ in range(8) ], nsegs - 6) + [ 1 for _ in range(3) ]
+wesprob = dsp.breakpoint([ dsp.rand() for _ in range(8) ], nsegs)
 
 for segi, seg in enumerate(segs): 
     print 'Rendering section %s' % (segi + 1)
@@ -95,8 +97,14 @@ for segi, seg in enumerate(segs):
 
         layers += [ glitches ]
 
+    if dsp.rand() < wesprob[segi]:
+        voices = orc.wes.make(sum(seg))
+        layers += [ voices ]
+
     if len(layers) > 0:
         section = dsp.mix(layers)
+
+
         out += section
 
 out += dsp.env(dsp.mix([ orc.guitar.makeLong([dsp.stf(dsp.rand(4, 8))]) for _ in range(2) ]), 'phasor')
