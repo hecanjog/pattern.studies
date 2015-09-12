@@ -4,10 +4,12 @@ import ctl
 out = ''
 
 kick = dsp.read('samples/jess/kickshuffle.wav').data
+kickcym = dsp.read('samples/jess/kickcym.wav').data
 rimshot = dsp.read('samples/jess/rimshot.wav').data
 
 def makeKick(length, i):
-    return dsp.fill(dsp.amp(kick, dsp.rand(1, 5)), length, silence=True)
+    k = kickcym if i == 0 else kick
+    return dsp.fill(dsp.amp(k, dsp.rand(1, 5)), length, silence=True)
 
 def makeRimshot(length, i):
     return dsp.fill(dsp.amp(rimshot, dsp.rand(4, 5)), length, silence=True)
