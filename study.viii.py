@@ -53,8 +53,8 @@ sines = []
 
 lowfreq = tune.ntf('g', octave=2)
 
-sines += [ dsp.tone((dsp.flen(out) / 4) * 3, lowfreq, amp=0.5) ]
-sines += [ dsp.tone((dsp.flen(out) / 4) * 3, lowfreq * 1.067, amp=0.5) ]
+sines += [ dsp.tone((dsp.flen(out) / 4) * 3, lowfreq, amp=0.4) ]
+sines += [ dsp.tone((dsp.flen(out) / 4) * 3, lowfreq * 1.067, amp=0.4) ]
 sines += [ dsp.tone((dsp.flen(out) / 4) * 3, lowfreq * 1.667, amp=0.25) ]
 
 sines = [ dsp.mix([ fx.penv(s), s ]) for s in sines ]
