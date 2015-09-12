@@ -4,13 +4,18 @@ import ctl
 out = ''
 
 kick = dsp.read('samples/jess/kickshuffle.wav').data
+rimshot = dsp.read('samples/jess/rimshot.wav').data
 
 def makeKick(length, i):
     return dsp.fill(dsp.amp(kick, dsp.rand(1, 5)), length, silence=True)
 
+def makeRimshot(length, i):
+    return dsp.fill(dsp.amp(rimshot, dsp.rand(4, 5)), length, silence=True)
+
 nchords = 12
 npulses = 200
 nlayers = 3
+sectionlength = dsp.stf(dsp.rand(10, 12))
 
 for _ in range(nchords):
     layers = []
@@ -39,7 +44,7 @@ for _ in range(nchords):
     for i, freq in enumerate(freqs):
         layers[i] = dsp.pine(layer, dsp.flen(layer) * 10, freq)
 
-    section = dsp.mix(layers)
+    section = dsp.fill(dsp.mix(layers), sectionlength)
 
     plen = dsp.randint(16, 32)
     pattern = dsp.eu(plen, dsp.randint(4, plen))
@@ -47,6 +52,9 @@ for _ in range(nchords):
     beat = dsp.flen(section) / plen
     kicks = ctl.makeBeat(pattern, [ beat for _ in range(plen) ], makeKick)
 
-    out += dsp.mix([ kicks, section ])
+    pattern = 'x..'
+    rimshots = ctl.makeBeat(pattern, [ dsp.flen(section) / 16 for _ in range(16) ], makeRimshot)
+
+    out += dsp.mix([ rimshots, kicks, section ])
 
 dsp.write(out, '04-study.x')
