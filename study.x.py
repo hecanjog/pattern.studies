@@ -1,5 +1,6 @@
 from pippi import dsp, tune
 import ctl
+import orc.hat
 
 out = ''
 
@@ -57,6 +58,10 @@ for _ in range(nchords):
     pattern = 'x..'
     rimshots = ctl.makeBeat(pattern, [ dsp.flen(section) / 16 for _ in range(16) ], makeRimshot)
 
-    out += dsp.mix([ rimshots, kicks, section ])
+    pattern = ctl.parseBeat('xxxx')
+    pdiv = dsp.randint(32, 64)
+    hats = ctl.makeBeat(pattern, [ dsp.flen(section) / pdiv for _ in range(pdiv) ], orc.hat.make)
+
+    out += dsp.mix([ hats, rimshots, kicks, section ])
 
 dsp.write(out, '04-study.x')
