@@ -1,9 +1,15 @@
 from pippi import dsp, tune
+import ctl
 
 out = ''
 
-nchords = 8
-npulses = 500
+kick = dsp.read('samples/jess/kickshuffle.wav').data
+
+def makeKick(length, i):
+    return dsp.fill(dsp.amp(kick, dsp.rand(1, 5)), length, silence=True)
+
+nchords = 12
+npulses = 200
 nlayers = 3
 
 for _ in range(nchords):
@@ -11,9 +17,9 @@ for _ in range(nchords):
 
     for _ in range(nlayers):
         layer = ''
-        highs = dsp.breakpoint([ dsp.rand(60, 15000) for _ in range(npulses / 100) ], npulses)
+        highs = dsp.breakpoint([ dsp.rand(60, 15000) for _ in range(npulses / 50) ], npulses)
         lows = [ dsp.rand(20, freq) for freq in highs ]
-        amps = dsp.breakpoint([ dsp.rand(0.1, 0.3) for _ in range(npulses / 100) ], npulses)
+        amps = dsp.breakpoint([ dsp.rand(0.1, 0.3) for _ in range(npulses / 50) ], npulses)
         pans = dsp.breakpoint([ dsp.rand(0, 1) for _ in range(npulses / 10) ], npulses)
         lengths = [ dsp.mstf(l) for l in dsp.breakpoint([ dsp.rand(1, 30) for _ in range(npulses / 10) ], npulses) ]
 
@@ -28,11 +34,19 @@ for _ in range(nchords):
 
         layers += [ layer ]
 
-    freqs = tune.fromdegrees([dsp.randint(1, 9) for _ in range(nlayers)], octave=2, root='e')
+    freqs = tune.fromdegrees([dsp.randint(1, 9) for _ in range(nlayers)], octave=1, root='a')
 
     for i, freq in enumerate(freqs):
         layers[i] = dsp.pine(layer, dsp.flen(layer) * 10, freq)
 
-    out += dsp.mix(layers)
+    section = dsp.mix(layers)
+
+    plen = dsp.randint(16, 32)
+    pattern = dsp.eu(plen, dsp.randint(4, plen))
+    pattern = [ 'x' if h == 1 else '.' for h in pattern ]
+    beat = dsp.flen(section) / plen
+    kicks = ctl.makeBeat(pattern, [ beat for _ in range(plen) ], makeKick)
+
+    out += dsp.mix([ kicks, section ])
 
 dsp.write(out, '04-study.x')
