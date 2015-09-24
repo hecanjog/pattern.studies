@@ -9,6 +9,8 @@ import orc.guitar
 import orc.wes
 import ctl
 
+dsp.timer('start')
+
 key = 'g'
 
 out = ''
@@ -112,3 +114,5 @@ out += dsp.env(dsp.mix([ orc.guitar.makeLong([dsp.stf(dsp.rand(4, 10))]) for _ i
 out += dsp.env(dsp.mix([ orc.guitar.makeLong([dsp.stf(dsp.rand(6, 12))]) for _ in range(3) ]), 'phasor')
 
 dsp.write(out, '02-study.vii')
+
+print dsp.timer('stop')
