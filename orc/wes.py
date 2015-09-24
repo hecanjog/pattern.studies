@@ -1,10 +1,11 @@
 from glob import glob
 from pippi import dsp
 
-def make(length):
+def fetch():
     samps = glob('samples/wes/*.wav')
+    return dsp.read(dsp.randchoose(samps)).data
 
-    voice = dsp.read(dsp.randchoose(samps)).data
-    voice = dsp.fill(voice, length)
 
-    return voice
+def make(length):
+    return dsp.fill(fetch(), length)
+

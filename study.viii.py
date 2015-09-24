@@ -1,6 +1,7 @@
 from pippi import dsp, tune
 from hcj import fx
 import math
+import orc.wes
 
 guitars = [ dsp.read('samples/guitar%s.wav' % (i + 1)).data for i in range(5) ]
 
@@ -46,8 +47,10 @@ def makeGrains():
 
     return ''.join(grains)
 
+wes = fx.spider(orc.wes.fetch())
+
 intro = dsp.mix([ dsp.amp(makeGrains(), dsp.rand(0.01, 0.2)) for _ in range(dsp.randint(5, 10)) ])
-intro = dsp.env(intro, 'phasor')
+intro = wes + dsp.env(intro, 'phasor')
 
 # Buildup
 ##########
