@@ -1,7 +1,56 @@
 from pippi import dsp, tune
 from hcj import fx
+import math
 
 guitars = [ dsp.read('samples/guitar%s.wav' % (i + 1)).data for i in range(5) ]
+
+# Intro
+##########
+
+def makeShape():
+    shape = []
+
+    num_shapelets = dsp.randint(3, 8)
+
+    for _ in range(num_shapelets):
+        shapelet_size = dsp.randint(20, 100)
+        num_points = dsp.randint(4, shapelet_size / dsp.randint(3, 4))
+        shapelet = dsp.breakpoint([ dsp.rand() for _ in range(num_points) ], shapelet_size)
+
+        shape += shapelet
+
+    return shape
+
+def makeGrains():
+    guitar = dsp.randchoose(guitars)
+    guitar = dsp.transpose(guitar, dsp.randchoose([1, 2, 3, 4, 8, 16]))
+
+    max_grain_length = dsp.mstf(dsp.rand(10, 500))
+
+    positions = [ math.floor(pos * (dsp.flen(guitar) - max_grain_length)) for pos in makeShape() ]
+    lengths = [ math.floor(length * (max_grain_length - 1) + 1) for length in makeShape() ]
+    pans = makeShape()
+    amps = [ amp * dsp.rand(0, 10) for amp in makeShape() ]
+
+    num_grains = dsp.randint(500, 1000)
+
+    grains = []
+
+    for i in range(num_grains):
+        grain = dsp.cut(guitar, positions[ i % len(positions) ], lengths[ i % len(lengths) ])
+        grain = dsp.pan(grain, pans[ i % len(pans) ])
+        grain = dsp.amp(grain, amps[ i % len(amps) ])
+        grain = dsp.taper(grain, 20)
+
+        grains += [ grain ]
+
+    return ''.join(grains)
+
+intro = dsp.mix([ dsp.amp(makeGrains(), dsp.rand(0.01, 0.2)) for _ in range(dsp.randint(5, 10)) ])
+intro = dsp.env(intro, 'phasor')
+
+# Buildup
+##########
 
 layers = []
 nlayers = 3
@@ -63,6 +112,6 @@ sines = dsp.mix(sines)
 sines = dsp.env(sines, 'line')
 sines = dsp.pad(sines, dsp.flen(out) - dsp.flen(sines), 0)
 
-out = dsp.mix([ out, sines ])
+out = dsp.mix([ intro, out, sines ])
 
 dsp.write(out, '01-study.viii')
