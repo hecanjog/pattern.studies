@@ -24,7 +24,7 @@ def makeShape():
 
 def makeGrains():
     guitar = dsp.randchoose(guitars)
-    guitar = dsp.transpose(guitar, dsp.randchoose([1, 2, 3, 4, 8, 16]))
+    guitar = dsp.transpose(guitar, dsp.randchoose([1, 2, 3, 4, 8]))
 
     max_grain_length = dsp.mstf(dsp.rand(10, 500))
 
