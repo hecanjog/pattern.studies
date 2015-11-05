@@ -95,12 +95,28 @@ while elapsed < tlength:
 
     bar = ''
 
+    key = 'e'
+    octave = 1
+
     bar += dsp.mix([ dsp.randchoose([ dloop1, dloop2 ]), kickhard ])
     bar += dsp.mix([ dsp.randchoose([ dloop1, dloop2 ]), kicksoft ])
     bar += dsp.mix([ dsp.randchoose([ dloop1, dloop2 ]), kicksoft ])
 
+    # Look ma, harmonic motion!
+    progression = 'i i v IV IV6'.split(' ')
+    cname = progression[ count % len(progression) ]
+    swells = dsp.mix([ makeSwells(cname, nswell, dsp.flen(bar), key, octave) for nswell in [8,4] ])
+    layers += [ swells ]
+
+    if cname == 'IV':
+        numbeats = dsp.randint(6, 64)
+    else:
+        numbeats = 16
+    numbeats = dsp.randint(3, 12) * 4
+
     beat = dsp.flen(bar) / 16
     bar = dsp.split(bar, beat)
+    bar = [ bar[i % len(bar)] for i in range(numbeats) ]
     bar = dsp.randshuffle(bar)
     for i, b in enumerate(bar):
         if dsp.rand() > 0.75:
@@ -114,41 +130,35 @@ while elapsed < tlength:
 
     layers += [ bar ]
 
-    snarep = '..x.'
-    pattern = ctl.parseBeat(snarep)
-    snares = ctl.makeBeat(pattern, [ beat for _ in range(16) ], makeSnare)
-    layers += [ snares ]
+    if elapsed > dsp.stf(30):
+        snarep = '..x.'
+        pattern = ctl.parseBeat(snarep)
+        snares = ctl.makeBeat(pattern, [ beat for _ in range(numbeats) ], makeSnare)
+        layers += [ snares ]
 
     rimshotp = '....x...'
     pattern = ctl.parseBeat(rimshotp)
-    rimshots = ctl.makeBeat(pattern, [ beat for _ in range(16) ], makeRimshot)
+    rimshots = ctl.makeBeat(pattern, [ beat for _ in range(numbeats) ], makeRimshot)
     layers += [ rimshots ]
 
 
-    kickp = 'x.......'
-    pattern = ctl.parseBeat(kickp)
-    kicks = ctl.makeBeat(pattern, [ beat for _ in range(16) ], makeKick)
-    layers += [ kicks ]
+    if dsp.rand() > 0.25:
+        kickp = 'x.......'
+        pattern = ctl.parseBeat(kickp)
+        kicks = ctl.makeBeat(pattern, [ beat for _ in range(numbeats) ], makeKick)
+        layers += [ kicks ]
 
-    sm = dsp.fill(smash, dsp.flen(bar))
-    sm = dsp.mix([ dsp.alias(sm), fx.penv(sm) ])
-    sm = dsp.amp(sm, dsp.rand(0.5, 1))
-    sk = dsp.fill(skitter, dsp.flen(bar))
-    sk = fx.penv(sk)
+    if dsp.rand() > 10.5:
+        sm = dsp.fill(smash, dsp.flen(bar))
+        sm = dsp.mix([ dsp.alias(sm), fx.penv(sm) ])
+        sm = dsp.amp(sm, dsp.rand(0.5, 1))
+        sk = dsp.fill(skitter, dsp.flen(bar))
+        sk = fx.penv(sk)
 
-    layers += [ sm, sk ]
+        layers += [ sm, sk ]
 
     if count % 4 == 0:
         layers += [ dsp.pad(flam, dsp.flen(bar) - dsp.flen(flam), 0) ]
-
-    key = 'e'
-    octave = 1
-
-    # Look ma, harmonic motion!
-    progression = 'i i v IV IV6'.split(' ')
-    cname = progression[ count % len(progression) ]
-    swells = dsp.mix([ makeSwells(cname, nswell, dsp.flen(bar), key, octave) for nswell in [8,4] ])
-    layers += [ swells ]
 
     bfreqs = tune.chord(cname, key, 2)
     bloopp = 'x.x.--------' if dsp.rand() > 0.5 else 'xxx.--------'
