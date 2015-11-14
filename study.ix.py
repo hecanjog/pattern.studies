@@ -211,7 +211,7 @@ while elapsed < tlength:
     rhodeses = makeRhodes(dsp.flen(bar), beat, rfreqs)
     layers += [ rhodeses ]
 
-    if dsp.rand() > 0.5 and elapsed > dsp.stf(120) and cname in breaks:
+    if elapsed > dsp.stf(120):
         arpses = dsp.mix([ makeArps(dsp.flen(bar), beat, cname) for _ in range(2) ])
         layers += [ arpses ]
 
