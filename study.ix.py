@@ -2,12 +2,6 @@ from pippi import dsp, tune
 from hcj import fx, keys, snds, drums, Sampler
 import ctl
 
-tlength = dsp.stf(60 * 5)
-
-out = ''
-elapsed = 0
-count = 1 
-
 dloop2 = dsp.read('samples/jess/loop2.wav').data
 
 dloop1 = dsp.read('samples/jess/loop1.wav').data
@@ -21,17 +15,18 @@ rimshot = dsp.amp(rimshot, 4)
 snare = dsp.read('samples/jess/snare.wav').data
 snare = dsp.amp(snare, 3)
 snare2 = snds.load('hits/hisnarespa.wav')
-snare2 = dsp.amp(snare2, 0.35)
+snare2 = dsp.amp(snare2, 0.25)
 
 clap = snds.load('hits/tapeclap.wav')
-clap = dsp.amp(clap, 0.5)
+clap = dsp.amp(clap, 0.25)
 
 flam = dsp.read('samples/jess/snareflam.wav').data
 flam = dsp.amp(flam, 3)
 smash = dsp.read('samples/jess/smash.wav').data
 skitter = dsp.read('samples/jess/skitter.wav').data
 paper = snds.load('hits/papersnap.wav')
-sock = snds.load('hits/sockbass.wav')
+#sock = snds.load('hits/sockbass.wav')
+sock = snds.load('hits/detroitkick1.wav')
 hat = snds.load('hits/keyshihat.wav')
 
 def makeSwells(cname, numswells, length, key='e', octave=1):
@@ -79,7 +74,7 @@ def makeArps(length, beat, cname):
     return out
 
 
-def makeRhodes(length, beat, freqs):
+def makeRhodes(length, beat, freqs, maxbend=0.05):
     backup = Sampler(snds.load('tones/nycrhodes01.wav'), tune.ntf('c'), direction='fw-bw-loop', tails=False)
     chord = [ keys.rhodes(length, freq, dsp.rand(0.4, 0.7)) for freq in freqs ]
     chord = dsp.randshuffle(chord)
@@ -88,6 +83,7 @@ def makeRhodes(length, beat, freqs):
     for i, c in enumerate(chord):
         pause = pause + (dsp.randint(1, 4) * beat)
         c = dsp.pan(c, dsp.rand())
+        c = fx.bend(c, [ dsp.rand() for _ in range(dsp.randint(5, 10)) ], dsp.rand(0, maxbend))
         chord[i] = dsp.pad(dsp.fill(c, length - pause), pause, 0)
 
     return dsp.mix(chord)
@@ -99,8 +95,8 @@ def makeHat(length, i):
     return dsp.fill(h, length, silence=True)
 
 def makeSnare(length, i):
-    s = dsp.mix([snare, snare2, clap])
-    s = dsp.fill(s, dsp.flen(s)/2)
+    s = dsp.mix([ dsp.randchoose([snare, snare2, clap]) for _ in range(3) ])
+    s = dsp.fill(s, dsp.randint(dsp.flen(s)/2, dsp.flen(s)))
     s = dsp.env(s, 'phasor')
     s = dsp.amp(s, dsp.rand(0.9,1))
     return dsp.fill(s, length, silence=True)
@@ -110,7 +106,10 @@ def makeRimshot(length, i):
 
 def makeKick(length, i):
     k = dsp.randchoose([ kickhard, kicksoft ])
-    k = dsp.mix([ k, sock ])
+    k = dsp.mix([ k, dsp.env(sock, 'phasor') ])
+    if dsp.rand() > 0.4:
+        k = dsp.env(k, 'phasor')
+
     return dsp.fill(k, length, silence=True)
 
 def makeBloop(length, i, bfreqs):
@@ -130,23 +129,114 @@ def makeBloop(length, i, bfreqs):
 
     return bloop
 
+def makePaper(out):
+    tail = dsp.cut(paper, dsp.mstf(60), dsp.flen(out) - dsp.mstf(60))
+
+    tail = [ dsp.transpose(tail, dsp.rand(0.95, 1.05)) for _ in range(dsp.randint(3,6)) ]
+    tail = [ fx.penv(t) for t in tail ]
+
+    out = dsp.mix(tail + [ out ])
+    
+    return out
+
+tlength = dsp.stf(dsp.rand(60 * 8, 60 * 12))
+
+out = ''
+elapsed = 0
+count = 1 
+float_played = 0
+
+section_choices = {
+    'intro': (['intro'] * 3) + (['stasis'] * 2),
+    'buildup': ['verse', 'buildup'],
+    'stasis': (['intro'] * 2) + ['buildup'] + (['stasis'] * 2),
+    'verse': ['verse'] * 2 + ['chorus'],
+    'chorus': ['chorus'] * 2 + ['bridge'],
+    'bridge': ['bridge', 'chorus', 'stasis', 'float'],
+    'float': ['intro', 'buildup', 'stasis'],
+}
+
+section_defs = {
+    'intro': ['prog1', 'hats'],
+    'buildup': ['prog1', 'choppy', 'hats', 'rims', 'kicks', 'smashes'],
+    'stasis': ['prog1', 'choppy', 'hats', 'smashes'],
+    'verse': ['prog1', 'snares', 'choppy', 'swells', 'hats', 'rims', 'kicks', 'bloops'],
+    'chorus': ['prog2', 'rushes', 'rims', 'smashes', 'arps', 'bloops'],
+    'bridge': ['prog3', 'snares', 'rushes', 'choppy', 'hats', 'rims', 'kicks', 'smashes', 'arps', 'bloops'],
+    'float': ['prog2', 'arps', 'bloops', 'swells', 'hats'],
+}
+
+def forceChange(section):
+    last_section = section
+    section = nextSection(section)
+    if last_section == section:
+        section = forceChange(section)
+    return section
+
+def forceAway(section, forced):
+    section = nextSection(section)
+    if forced == section:
+        section = forceAway(section, forced)
+    return section
+
+def nextSection(section):
+    global float_played
+    section = dsp.randchoose(section_choices[section])
+    if section == 'float' and float_played > 2:
+        section = forceAway(section, 'float')
+    elif section == 'float':
+        float_played += 1
+
+    return section
+
+def canPlay(inst, section):
+    return inst in section_defs[section]
+
+section = 'intro'
+reps = 0
+
 while elapsed < tlength:
-    print 'Rendering section %s...' % count
+    last_section = section
+    section = nextSection(section)
+
+    if reps > 5:
+        section = forceChange(section)
+
+    if last_section == section:
+        reps += 1
+    else:
+        reps = 0
+
+    if elapsed > dsp.stf(60 * 4) and not float_played:
+        section = 'float'
+        float_played += 1
+
+    print 'Rendering section %s... %s' % (count, section)
 
     layers = []
 
     # Look ma, harmonic motion!
-    progression = 'i i v IV IV6'.split(' ')
     progression = ('i i v IV IV6 ' * 4) + 'v9 v9 ii7 vi9 IV69 ' + ('i i v IV IV6 ' * 2) + 'v9 v9 ii7 ii7 vi9 IV69 IV69'
-
     progression = progression.split(' ')
-    breaks = ('v9', 'ii7', 'vi9', 'IV69')
+
+    if canPlay('prog1', section):
+        progression = 'i i v IV IV6'.split(' ')
+
+    if canPlay('prog2', section):
+        progression = 'v9 v9 ii7 vi9 IV69'.split(' ')
+
+    if canPlay('prog3', section):
+        progression = 'II7 II7 V69'.split(' ')
+
     cname = progression[ count % len(progression) ]
 
     if cname == 'IV' or cname == 'vi9' or cname == 'IV69':
         numbeats = 16 + (4 * dsp.randint(2, 4))
     else:
         numbeats = 16
+
+    if section == 'float':
+        numbeats = 16 * 16
 
     bpm = 84
     beat = dsp.bpm2frames(bpm) / 4
@@ -171,22 +261,18 @@ while elapsed < tlength:
         dl[i] = dsp.fill(dl[i], beat, silence=True)
 
     dl = ''.join(dl)
-    if dsp.rand() > 0.25 and elapsed > dsp.stf(20) and cname not in breaks:
+    if canPlay('choppy', section):
         layers += [ dl ]
 
-    #bar += dsp.mix([ dsp.randchoose([ dloop1, dloop2 ]), kickhard ])
-    #bar += dsp.mix([ dsp.randchoose([ dloop1, dloop2 ]), kicksoft ])
-    #bar += dsp.mix([ dsp.randchoose([ dloop1, dloop2 ]), kicksoft ])
-
-    if elapsed > dsp.stf(40) and cname not in breaks:
+    if canPlay('swells', section) or (section in ('intro', 'stasis') and dsp.rand() > 0.5):
         swells = dsp.mix([ makeSwells(cname, nswell, bar_length, key, octave) for nswell in [8,4] ])
         layers += [ swells ]
 
-    if cname in breaks:
+    if canPlay('rushes', section):
         rushes = [ drums.roll(dsp.randchoose([paper, smash, snare, rimshot, kickhard]), bar_length, dsp.randint(1, 3)) for _ in range(3) ]
         layers += [ dsp.amp(dsp.mix(rushes), 0.5)]
 
-    if elapsed > dsp.stf(40) and cname not in breaks:
+    if canPlay('snares', section):
         snarep = '....x...'
         if elapsed > dsp.stf(120) and dsp.rand() > 0.75:
             snarep = '....xx..'
@@ -196,29 +282,29 @@ while elapsed < tlength:
         snares = dsp.amp(snares, dsp.rand(2,4))
         layers += [ snares ]
 
-    hatp = 'x.x.'
-    pattern = ctl.parseBeat(hatp)
-    hats = ctl.makeBeat(pattern, [ beat for _ in range(numbeats) ], makeHat)
-    layers += [ hats ]
+    if canPlay('hats', section):
+        hatp = 'x.x.'
+        pattern = ctl.parseBeat(hatp)
+        hats = ctl.makeBeat(pattern, [ beat for _ in range(numbeats) ], makeHat)
+        layers += [ hats ]
 
-    rimshotp = '....x...'
-    pattern = ctl.parseBeat(rimshotp)
-    rimshots = ctl.makeBeat(pattern, [ beat for _ in range(numbeats) ], makeRimshot)
-    if elapsed > dsp.stf(40) and cname not in breaks:
+    if canPlay('rims', section):
+        rimshotp = '....x...'
+        pattern = ctl.parseBeat(rimshotp)
+        rimshots = ctl.makeBeat(pattern, [ beat for _ in range(numbeats) ], makeRimshot)
         if dsp.rand() > 0.75:
             rimshots = dsp.amp(drums.roll(rimshot, dsp.flen(bar), dsp.randint(2, 6)), dsp.rand(0.4, 1))
 
-    if dsp.rand() > 0.25 and elapsed > dsp.stf(5) and cname not in breaks:
         layers += [ rimshots ]
 
-    if dsp.rand() > 0.25 and cname not in breaks:
+    if canPlay('kicks', section):
         kickp = 'x.......'
         pattern = ctl.parseBeat(kickp)
         kicks = ctl.makeBeat(pattern, [ beat for _ in range(numbeats) ], makeKick)
         kicks = dsp.amp(kicks, dsp.rand(2,4))
         layers += [ kicks ]
 
-    if elapsed > dsp.stf(90):
+    if canPlay('smashes', section):
         sm = dsp.fill(smash, dsp.flen(bar))
         sm = dsp.mix([ dsp.alias(sm), fx.penv(sm) ])
         sm = dsp.amp(sm, dsp.rand(0.5, 2))
@@ -230,28 +316,25 @@ while elapsed < tlength:
     if count % 4 == 0:
         layers += [ dsp.pad(flam, dsp.flen(bar) - dsp.flen(flam), 0) ]
 
-    bfreqs = tune.chord(cname, key, 2)
-    bloopp = 'x.x.--------' if dsp.rand() > 0.5 else 'xxx.--------'
-    bloopp = bloopp if dsp.rand() > 0.65 else 'xxx.----'
-    pattern = ctl.parseBeat(bloopp)
-    bloops = ctl.makeBeat(pattern, [ beat / 2 for _ in range(16) ], makeBloop, bfreqs)
+    if canPlay('bloops', section):
+        bfreqs = tune.chord(cname, key, 2)
+        bloopp = 'x.x.--------' if dsp.rand() > 0.5 else 'xxx.--------'
+        bloopp = bloopp if dsp.rand() > 0.65 else 'xxx.----'
+        pattern = ctl.parseBeat(bloopp)
+        bloops = ctl.makeBeat(pattern, [ beat / 2 for _ in range(16) ], makeBloop, bfreqs)
 
-    if dsp.rand() > 0.5 and elapsed > dsp.stf(40):
         layers += [ bloops ]
 
-    if elapsed > dsp.stf(120):
+    if canPlay('arps', section):
         arpses = dsp.mix([ makeArps(dsp.flen(bar), beat, cname) for _ in range(dsp.randint(2,4)) ])
         layers += [ arpses ]
 
-    layers += [ dsp.fill(dsp.amp(paper, dsp.rand(2, 4)), dsp.flen(bar), silence=True) ]
 
-    #layers = dsp.randshuffle(layers)
-    #popnum = dsp.randint(0, len(layers)/2)
-    #for _ in range(popnum):
-    #    layers.pop(dsp.randint(0, len(layers)-1))
+    layers += [ dsp.fill(dsp.amp(makePaper(paper), dsp.rand(2, 4)), dsp.flen(bar), silence=True) ]
 
     rfreqs = tune.chord(cname, key, 2)
-    rhodeses = makeRhodes(dsp.flen(bar), beat, rfreqs)
+    maxbend = 0.005 if dsp.rand() > 0.1 else 0.03
+    rhodeses = makeRhodes(dsp.flen(bar), beat, rfreqs, maxbend)
     layers += [ rhodeses ]
 
     bar = dsp.mix(layers)
@@ -260,5 +343,8 @@ while elapsed < tlength:
 
     elapsed += dsp.flen(bar)
     count += 1
+
+# ha ha
+out += dsp.mix([ makeSwells(cname, nswell, bar_length, key, octave) for nswell in [8,4] ])
 
 dsp.write(out, '03-study.ix')
