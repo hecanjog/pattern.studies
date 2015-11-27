@@ -139,31 +139,32 @@ def makePaper(out):
     
     return out
 
-tlength = dsp.stf(dsp.rand(60 * 8, 60 * 12))
+tlength = dsp.stf(dsp.rand(60 * 2, 60 * 4))
 
 out = ''
 elapsed = 0
 count = 1 
-float_played = 0
 
 section_choices = {
-    'intro': (['intro'] * 3) + (['stasis'] * 2),
+    'intro': (['intro'] * 10) + (['stasis'] * 1),
     'buildup': ['verse', 'buildup'],
-    'stasis': (['intro'] * 2) + ['buildup'] + (['stasis'] * 2),
+    'stasis': ['buildup'] + (['stasis'] * 2),
     'verse': ['verse'] * 2 + ['chorus'],
-    'chorus': ['chorus'] * 2 + ['bridge'],
-    'bridge': ['bridge', 'chorus', 'stasis', 'float'],
-    'float': ['intro', 'buildup', 'stasis'],
+    'chorus': ['chorus'] * 2 + ['bridge', 'intro'],
+    'bridge': (['bridge'] * 10) + ['chorus', 'stasis', 'float', 'intro'],
+    'float': ['float', 'afterfloat'],
+    'afterfloat': ['chorus', 'verse', 'bridge'],
 }
 
 section_defs = {
-    'intro': ['prog1', 'hats'],
+    'intro': ['prog0', 'hats'],
     'buildup': ['prog1', 'choppy', 'hats', 'rims', 'kicks', 'smashes'],
-    'stasis': ['prog1', 'choppy', 'hats', 'smashes'],
+    'stasis': ['prog1', 'choppy', 'hats', 'kicks'],
     'verse': ['prog1', 'snares', 'choppy', 'swells', 'hats', 'rims', 'kicks', 'bloops'],
     'chorus': ['prog2', 'rushes', 'rims', 'smashes', 'arps', 'bloops'],
     'bridge': ['prog3', 'snares', 'rushes', 'choppy', 'hats', 'rims', 'kicks', 'smashes', 'arps', 'bloops'],
     'float': ['prog2', 'arps', 'bloops', 'swells', 'hats'],
+    'afterfloat': ['prog2', 'arps', 'bloops', 'swells', 'hats', 'rims', 'choppy'],
 }
 
 def forceChange(section):
@@ -180,12 +181,9 @@ def forceAway(section, forced):
     return section
 
 def nextSection(section):
-    global float_played
     section = dsp.randchoose(section_choices[section])
-    if section == 'float' and float_played > 2:
+    if section == 'float':
         section = forceAway(section, 'float')
-    elif section == 'float':
-        float_played += 1
 
     return section
 
@@ -194,12 +192,12 @@ def canPlay(inst, section):
 
 section = 'intro'
 reps = 0
+key = dsp.randchoose('abcdefg')
 
 while elapsed < tlength:
     last_section = section
-    section = nextSection(section)
 
-    if reps > 5:
+    if reps > 4:
         section = forceChange(section)
 
     if last_section == section:
@@ -207,36 +205,33 @@ while elapsed < tlength:
     else:
         reps = 0
 
-    if elapsed > dsp.stf(60 * 4) and not float_played:
-        section = 'float'
-        float_played += 1
-
     print 'Rendering section %s... %s' % (count, section)
 
     layers = []
 
+    numbeats = 16
+
     # Look ma, harmonic motion!
     progression = ('i i v IV IV6 ' * 4) + 'v9 v9 ii7 vi9 IV69 ' + ('i i v IV IV6 ' * 2) + 'v9 v9 ii7 ii7 vi9 IV69 IV69'
     progression = progression.split(' ')
+    
+    if canPlay('prog0', section):
+        progression = 'i II7 IV6'.split(' ')
 
     if canPlay('prog1', section):
         progression = 'i i v IV IV6'.split(' ')
 
     if canPlay('prog2', section):
         progression = 'v9 v9 ii7 vi9 IV69'.split(' ')
+        numbeats = 16 + (4 * dsp.randint(2, 4))
 
     if canPlay('prog3', section):
         progression = 'II7 II7 V69'.split(' ')
 
     cname = progression[ count % len(progression) ]
 
-    if cname == 'IV' or cname == 'vi9' or cname == 'IV69':
-        numbeats = 16 + (4 * dsp.randint(2, 4))
-    else:
-        numbeats = 16
-
     if section == 'float':
-        numbeats = 16 * 16
+        numbeats = 16 * dsp.randint(2, 20)
 
     bpm = 84
     beat = dsp.bpm2frames(bpm) / 4
@@ -244,28 +239,32 @@ while elapsed < tlength:
 
     bar = dsp.pad('', 0, bar_length)
 
-    key = 'e'
-    octave = 1
-
-    dl = ''.join([ dsp.mix([ dsp.randchoose([ dloop1, dloop2 ]), dsp.randchoose([ kickhard, kicksoft ]) ]) for _ in range(3) ])
-    dl = dsp.split(dl, dsp.flen(dl) / 16)
-    dl = dsp.randshuffle(dl)
-    dl = [ dsp.env(dd, 'phasor') for dd in dl ]
-    for i, b in enumerate(dl):
-        if dsp.rand() > 0.75:
-            dl[i] = dsp.pad('', 0, dsp.flen(b))
-        elif dsp.rand() > 0.75:
-            dl[i] = dsp.split(b, dsp.flen(b) / 2)[0] * 2
-
-        dl[i] = dsp.amp(dl[i], dsp.rand(0.9, 2))
-        dl[i] = dsp.fill(dl[i], beat, silence=True)
-
-    dl = ''.join(dl)
     if canPlay('choppy', section):
+        dl = ''.join([ dsp.mix([ dsp.randchoose([ dloop1, dloop2 ]), dsp.randchoose([ kickhard, kicksoft ]) ]) for _ in range(3) ])
+        dl = dsp.split(dl, dsp.flen(dl) / 16)
+        dl = dsp.randshuffle(dl)
+        dl = [ dsp.env(dd, 'phasor') for dd in dl ]
+        for i, b in enumerate(dl):
+            if dsp.rand() > 0.75:
+                dl[i] = dsp.pad('', 0, dsp.flen(b))
+            elif dsp.rand() > 0.75:
+                dl[i] = dsp.split(b, dsp.flen(b) / 2)[0] * 2
+
+            dl[i] = dsp.amp(dl[i], dsp.rand(0.9, 2))
+            dl[i] = dsp.fill(dl[i], beat, silence=True)
+
+        dl = ''.join(dl)
         layers += [ dl ]
 
-    if canPlay('swells', section) or (section in ('intro', 'stasis') and dsp.rand() > 0.5):
-        swells = dsp.mix([ makeSwells(cname, nswell, bar_length, key, octave) for nswell in [8,4] ])
+    if canPlay('swells', section):
+        octave = 1 if section == 'float' else dsp.randint(2, 3)
+        sdivs = [ dsp.randint(2, 8) for _ in range(dsp.randint(2, 4)) ]
+        swells = dsp.mix([ makeSwells(cname, nswell, bar_length, key, octave) for nswell in sdivs ])
+
+        if section != 'float':
+            swells = fx.penv(swells)
+            swells = dsp.env(swells, 'random')
+
         layers += [ swells ]
 
     if canPlay('rushes', section):
@@ -274,18 +273,26 @@ while elapsed < tlength:
 
     if canPlay('snares', section):
         snarep = '....x...'
-        if elapsed > dsp.stf(120) and dsp.rand() > 0.75:
+        if elapsed > dsp.stf(90) and dsp.rand() > 0.75:
             snarep = '....xx..'
 
+        if elapsed > dsp.stf(120) and dsp.rand() > 0.75:
+            snarep = '..x..x..x'
+
         pattern = ctl.parseBeat(snarep)
+
         snares = ctl.makeBeat(pattern, [ beat for _ in range(numbeats) ], makeSnare)
         snares = dsp.amp(snares, dsp.rand(2,4))
+        snares = dsp.fill(snares, bar_length)
         layers += [ snares ]
 
     if canPlay('hats', section):
         hatp = 'x.x.'
         pattern = ctl.parseBeat(hatp)
         hats = ctl.makeBeat(pattern, [ beat for _ in range(numbeats) ], makeHat)
+        if section == 'float':
+            hats = fx.penv(hats)
+
         layers += [ hats ]
 
     if canPlay('rims', section):
@@ -329,13 +336,18 @@ while elapsed < tlength:
         arpses = dsp.mix([ makeArps(dsp.flen(bar), beat, cname) for _ in range(dsp.randint(2,4)) ])
         layers += [ arpses ]
 
+    if section != 'intro':
+        rfreqs = tune.chord(cname, key, 2)
+        maxbend = 0.005 if dsp.rand() > 0.3 else 0.05
+        rhodeses = makeRhodes(dsp.flen(bar), beat, rfreqs, maxbend)
+        layers += [ rhodeses ]
 
-    layers += [ dsp.fill(dsp.amp(makePaper(paper), dsp.rand(2, 4)), dsp.flen(bar), silence=True) ]
+    # Paper always
+    papers = dsp.fill(dsp.amp(makePaper(paper), dsp.rand(2, 4)), dsp.flen(bar), silence=True)
+    if section == 'intro' and dsp.rand() > 0.5:
+        papers = fx.bend(papers, [ dsp.rand() for _ in range(dsp.randint(5, 10)) ], dsp.rand(0, 0.5))
 
-    rfreqs = tune.chord(cname, key, 2)
-    maxbend = 0.005 if dsp.rand() > 0.1 else 0.03
-    rhodeses = makeRhodes(dsp.flen(bar), beat, rfreqs, maxbend)
-    layers += [ rhodeses ]
+    layers += [ papers ]
 
     bar = dsp.mix(layers)
 
@@ -343,8 +355,15 @@ while elapsed < tlength:
 
     elapsed += dsp.flen(bar)
     count += 1
+    section = nextSection(section)
 
-# ha ha
-out += dsp.mix([ makeSwells(cname, nswell, bar_length, key, octave) for nswell in [8,4] ])
+############
+## Endings (at least 3)
+
+## Varispider
+out = dsp.vsplit(out, dsp.stf(4), dsp.stf(10))
+out[-1] = fx.spider(out[-1], numgrains=dsp.randint(100, 200))
+out[-1] = dsp.env(out[-1], 'phasor')
+out = ''.join(out)
 
 dsp.write(out, '03-study.ix')
