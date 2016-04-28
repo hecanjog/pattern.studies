@@ -145,14 +145,16 @@ out = ''
 elapsed = 0
 count = 1 
 
+floated = False
+
 section_choices = {
     'intro': (['intro'] * 10) + (['stasis'] * 1),
     'buildup': ['verse', 'buildup'],
     'stasis': ['buildup'] + (['stasis'] * 2),
     'verse': ['verse'] * 2 + ['chorus'],
-    'chorus': ['chorus'] * 2 + ['bridge', 'intro'],
+    'chorus': ['chorus'] * 2 + ['bridge', 'intro', 'float'],
     'bridge': (['bridge'] * 10) + ['chorus', 'stasis', 'float', 'intro'],
-    'float': ['float', 'afterfloat'],
+    'float': ['afterfloat'],
     'afterfloat': ['chorus', 'verse', 'bridge'],
 }
 
@@ -182,8 +184,12 @@ def forceAway(section, forced):
 
 def nextSection(section):
     section = dsp.randchoose(section_choices[section])
-    if section == 'float':
+    if section == 'float' and floated == True:
         section = forceAway(section, 'float')
+
+    if section == 'float':
+        global floated
+        floated = True
 
     return section
 
