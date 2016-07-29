@@ -64,4 +64,4 @@ for _ in range(nchords):
 
     out += dsp.mix([ hats, rimshots, kicks, section ])
 
-dsp.write(out, '04-study.x')
+dsp.write(out, '04-bumps_i')

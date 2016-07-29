@@ -113,6 +113,6 @@ out += dsp.env(dsp.mix([ orc.guitar.makeLong([dsp.stf(dsp.rand(4, 8))]) for _ in
 out += dsp.env(dsp.mix([ orc.guitar.makeLong([dsp.stf(dsp.rand(4, 10))]) for _ in range(2) ]), 'phasor')
 out += dsp.env(dsp.mix([ orc.guitar.makeLong([dsp.stf(dsp.rand(6, 12))]) for _ in range(3) ]), 'phasor')
 
-dsp.write(out, '02-study.vii')
+dsp.write(out, '02-friction_ii')
 
 print dsp.timer('stop')

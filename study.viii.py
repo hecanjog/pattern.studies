@@ -117,4 +117,4 @@ sines = dsp.pad(sines, dsp.flen(out) - dsp.flen(sines), 0)
 
 out = dsp.mix([ intro, out, sines ])
 
-dsp.write(out, '01-study.viii')
+dsp.write(out, '01-friction_i')

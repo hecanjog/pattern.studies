@@ -1,4 +1,4 @@
-all: 1 2 3 4
+all: 1 2 3 4 5
 
 1: study.viii.py
 	python study.viii.py
@@ -11,3 +11,6 @@ all: 1 2 3 4
 
 4: study.x.py
 	python study.x.py
+
+5: study.xii.py
+	python study.xii.py

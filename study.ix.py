@@ -372,4 +372,4 @@ out[-1] = fx.spider(out[-1], numgrains=dsp.randint(100, 200))
 out[-1] = dsp.env(out[-1], 'phasor')
 out = ''.join(out)
 
-dsp.write(out, '03-study.ix')
+dsp.write(out, '03-the_green_green_horse')

@@ -117,4 +117,4 @@ while elapsed < tlength:
     count += 1
     elapsed += dsp.flen(bar)
 
-dsp.write(out, 'study.xii')
+dsp.write(out, '05-bumps_ii')
