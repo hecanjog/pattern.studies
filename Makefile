@@ -1,4 +1,4 @@
-all: 01-study.viii.wav 02-study.vii.wav 03-study.ix.wav 04-study.x.wav
+all: study.viii.py study.vii.py study.ix.py study.x.py
 	python study.viii.py
 	python study.vii.py
 	python study.ix.py
