@@ -25,7 +25,6 @@ flam = dsp.amp(flam, 3)
 smash = dsp.read('samples/jess/smash.wav').data
 skitter = dsp.read('samples/jess/skitter.wav').data
 paper = snds.load('hits/papersnap.wav')
-#sock = snds.load('hits/sockbass.wav')
 sock = snds.load('hits/detroitkick1.wav')
 hat = snds.load('hits/keyshihat.wav')
 
@@ -139,13 +138,9 @@ def makePaper(out):
     
     return out
 
-tlength = dsp.stf(dsp.rand(60 * 2, 60 * 4))
-
 out = ''
 elapsed = 0
 count = 1 
-
-floated = False
 
 section_choices = {
     'intro': (['intro'] * 10) + (['stasis'] * 1),
@@ -167,44 +162,36 @@ section_defs = {
     'bridge': ['prog3', 'snares', 'rushes', 'choppy', 'hats', 'rims', 'kicks', 'smashes', 'arps', 'bloops'],
     'float': ['prog2', 'arps', 'bloops', 'swells', 'hats'],
     'afterfloat': ['prog2', 'arps', 'bloops', 'swells', 'hats', 'rims', 'choppy'],
+    'ending': ['prog0', 'swells', 'bloops'],
 }
 
-def forceChange(section):
+def forceChange(section, count, numsections, ending_length):
     last_section = section
-    section = nextSection(section)
-    if last_section == section:
-        section = forceChange(section)
+    section = nextSection(section, count, numsections, ending_length)
+    if last_section == section and section != 'ending':
+        section = forceChange(section, count, numsections, ending_length)
     return section
 
-def forceAway(section, forced):
-    section = nextSection(section)
-    if forced == section:
-        section = forceAway(section, forced)
-    return section
-
-def nextSection(section):
-    section = dsp.randchoose(section_choices[section])
-    if section == 'float' and floated == True:
-        section = forceAway(section, 'float')
-
-    if section == 'float':
-        global floated
-        floated = True
-
-    return section
+def nextSection(section, count, numsections, ending_length=4):
+    if count >= numsections - ending_length:
+        return 'ending'
+    else:
+        return dsp.randchoose(section_choices[section])
 
 def canPlay(inst, section):
     return inst in section_defs[section]
 
 section = 'intro'
 reps = 0
+numsections = dsp.randint(15, 20)
+ending_length = dsp.randint(2, 4)
 key = dsp.randchoose('abcdefg')
 
-while elapsed < tlength:
+for _ in range(numsections):
     last_section = section
 
-    if reps > 4:
-        section = forceChange(section)
+    if reps > 2:
+        section = forceChange(section, count, numsections, ending_length)
 
     if last_section == section:
         reps += 1
@@ -361,15 +348,6 @@ while elapsed < tlength:
 
     elapsed += dsp.flen(bar)
     count += 1
-    section = nextSection(section)
-
-############
-## Endings (at least 3)
-
-## Varispider
-out = dsp.vsplit(out, dsp.stf(4), dsp.stf(10))
-out[-1] = fx.spider(out[-1], numgrains=dsp.randint(100, 200))
-out[-1] = dsp.env(out[-1], 'phasor')
-out = ''.join(out)
+    section = nextSection(section, count, numsections, ending_length)
 
 dsp.write(out, '03-the_green_green_horse')
