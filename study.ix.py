@@ -28,6 +28,29 @@ paper = snds.load('hits/papersnap.wav')
 sock = snds.load('hits/detroitkick1.wav')
 hat = snds.load('hits/keyshihat.wav')
 
+section_choices = {
+    'intro': (['intro'] * 4) + (['stasis'] * 1),
+    'buildup': ['verse'] * 2 + ['buildup'],
+    'stasis': ['buildup'] + (['stasis'] * 2),
+    'verse': ['verse'] * 2 + ['chorus'],
+    'chorus': ['chorus'] * 2 + ['bridge', 'intro', 'float', 'verse'],
+    'bridge': (['bridge'] * 10) + ['chorus', 'stasis', 'float', 'intro'],
+    'float': ['afterfloat'],
+    'afterfloat': ['chorus', 'verse', 'bridge'],
+}
+
+section_defs = {
+    'intro': ['prog0', 'hats'],
+    'buildup': ['prog1', 'choppy', 'hats', 'rims', 'kicks', 'smashes'],
+    'stasis': ['prog1', 'choppy', 'hats', 'kicks'],
+    'verse': ['prog1', 'snares', 'choppy', 'swells', 'hats', 'rims', 'kicks', 'bloops'],
+    'chorus': ['prog2', 'rushes', 'rims', 'smashes', 'arps', 'bloops'],
+    'bridge': ['prog3', 'snares', 'rushes', 'choppy', 'hats', 'rims', 'kicks', 'smashes', 'arps', 'bloops'],
+    'float': ['prog2', 'arps', 'bloops', 'swells', 'hats'],
+    'afterfloat': ['prog2', 'arps', 'bloops', 'swells', 'hats', 'rims', 'choppy'],
+    'ending': ['prog0', 'swells'],
+}
+
 def makeSwells(cname, numswells, length, key='e', octave=1):
     swells = []
 
@@ -138,33 +161,6 @@ def makePaper(out):
     
     return out
 
-out = ''
-elapsed = 0
-count = 1 
-
-section_choices = {
-    'intro': (['intro'] * 10) + (['stasis'] * 1),
-    'buildup': ['verse', 'buildup'],
-    'stasis': ['buildup'] + (['stasis'] * 2),
-    'verse': ['verse'] * 2 + ['chorus'],
-    'chorus': ['chorus'] * 2 + ['bridge', 'intro', 'float'],
-    'bridge': (['bridge'] * 10) + ['chorus', 'stasis', 'float', 'intro'],
-    'float': ['afterfloat'],
-    'afterfloat': ['chorus', 'verse', 'bridge'],
-}
-
-section_defs = {
-    'intro': ['prog0', 'hats'],
-    'buildup': ['prog1', 'choppy', 'hats', 'rims', 'kicks', 'smashes'],
-    'stasis': ['prog1', 'choppy', 'hats', 'kicks'],
-    'verse': ['prog1', 'snares', 'choppy', 'swells', 'hats', 'rims', 'kicks', 'bloops'],
-    'chorus': ['prog2', 'rushes', 'rims', 'smashes', 'arps', 'bloops'],
-    'bridge': ['prog3', 'snares', 'rushes', 'choppy', 'hats', 'rims', 'kicks', 'smashes', 'arps', 'bloops'],
-    'float': ['prog2', 'arps', 'bloops', 'swells', 'hats'],
-    'afterfloat': ['prog2', 'arps', 'bloops', 'swells', 'hats', 'rims', 'choppy'],
-    'ending': ['prog0', 'swells', 'bloops'],
-}
-
 def forceChange(section, count, numsections, ending_length):
     last_section = section
     section = nextSection(section, count, numsections, ending_length)
@@ -181,13 +177,18 @@ def nextSection(section, count, numsections, ending_length=4):
 def canPlay(inst, section):
     return inst in section_defs[section]
 
+
+
+out = ''
+elapsed = 0
+count = 1 
 section = 'intro'
 reps = 0
 numsections = dsp.randint(15, 20)
-ending_length = dsp.randint(2, 4)
+ending_length = dsp.randint(1, 3)
 key = dsp.randchoose('abcdefg')
 
-for _ in range(numsections):
+for section_index in range(numsections):
     last_section = section
 
     if reps > 2:
@@ -226,8 +227,12 @@ for _ in range(numsections):
     if section == 'float':
         numbeats = 16 * dsp.randint(2, 20)
 
+    if section == 'ending':
+        numbeats = dsp.randint(16, 40)
+
     bpm = 84
     beat = dsp.bpm2frames(bpm) / 4
+
     bar_length = beat * numbeats
 
     bar = dsp.pad('', 0, bar_length)
@@ -254,7 +259,7 @@ for _ in range(numsections):
         sdivs = [ dsp.randint(2, 8) for _ in range(dsp.randint(2, 4)) ]
         swells = dsp.mix([ makeSwells(cname, nswell, bar_length, key, octave) for nswell in sdivs ])
 
-        if section != 'float':
+        if section not in ('float', 'ending'):
             swells = fx.penv(swells)
             swells = dsp.env(swells, 'random')
 
@@ -329,13 +334,12 @@ for _ in range(numsections):
         arpses = dsp.mix([ makeArps(dsp.flen(bar), beat, cname) for _ in range(dsp.randint(2,4)) ])
         layers += [ arpses ]
 
-    if section != 'intro':
+    if section not in ('intro', 'ending'):
         rfreqs = tune.chord(cname, key, 2)
         maxbend = 0.005 if dsp.rand() > 0.3 else 0.05
         rhodeses = makeRhodes(dsp.flen(bar), beat, rfreqs, maxbend)
         layers += [ rhodeses ]
 
-    # Paper always
     papers = dsp.fill(dsp.amp(makePaper(paper), dsp.rand(2, 4)), dsp.flen(bar), silence=True)
     if section == 'intro' and dsp.rand() > 0.5:
         papers = fx.bend(papers, [ dsp.rand() for _ in range(dsp.randint(5, 10)) ], dsp.rand(0, 0.5))
