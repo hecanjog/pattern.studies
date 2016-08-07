@@ -184,7 +184,7 @@ elapsed = 0
 count = 1 
 section = 'intro'
 reps = 0
-numsections = dsp.randint(15, 20)
+numsections = dsp.randint(150, 200)
 ending_length = dsp.randint(1, 3)
 key = dsp.randchoose('abcdefg')
 
